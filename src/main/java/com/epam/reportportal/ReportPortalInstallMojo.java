@@ -7,7 +7,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-@Mojo(name = "install", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
+@Mojo(name = "configure", defaultPhase = LifecyclePhase.GENERATE_TEST_RESOURCES)
 public class ReportPortalInstallMojo extends AbstractMojo {
 
 	@Parameter(property = "session", defaultValue = "${session}", readonly = true)
