@@ -6,6 +6,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import static java.util.Optional.ofNullable;
 
@@ -23,8 +24,16 @@ public class ReportPortalInstallMojo extends AbstractMojo {
 				.filter(p -> p.getId().startsWith("org.apache.maven.plugins:maven-surefire-plugin") || p.getId()
 						.startsWith("org.apache.maven.plugins:maven-surefire-plugin"))
 				.forEach(p -> {
-					getLog().info(ofNullable(p.getConfiguration()).map(Object::toString).orElse("NULL"));
-					getLog().info("Class: " + ofNullable(p.getConfiguration()).map(Object::getClass).map(Class::getName).orElse("NULL"));
+					Xpp3Dom config = ofNullable(p.getConfiguration()).map(c -> (Xpp3Dom) c)
+							.orElseGet(() -> new Xpp3Dom("configuration"));
+					getLog().info(config.toString());
+					getLog().info("Class: " + config.getClass().getName());
+					Xpp3Dom argLine = new Xpp3Dom("argLine");
+					argLine.setValue("-Dtest.param=TestTest");
+					config.addChild(argLine);
+					getLog().info(config.toString());
+					p.setConfiguration(config);
 				});
+
 	}
 }
