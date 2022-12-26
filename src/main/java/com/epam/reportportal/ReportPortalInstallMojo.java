@@ -64,11 +64,11 @@ public class ReportPortalInstallMojo extends AbstractMojo {
 		}
 	}
 
-	private void generateJunit5files(){
+	private void generateJunit5files() {
 		// TODO: implement
 	}
 
-	private void generateTestNgFiles(){
+	private void generateTestNgFiles() {
 		// TODO: implement
 	}
 
