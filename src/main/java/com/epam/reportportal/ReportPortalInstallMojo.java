@@ -2,12 +2,17 @@ package com.epam.reportportal;
 
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import org.apache.commons.io.IOUtils;
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.component.repository.ComponentDependency;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.io.File;
@@ -18,7 +23,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -26,15 +33,23 @@ import static java.util.Optional.ofNullable;
 @Mojo(name = "configure", defaultPhase = LifecyclePhase.GENERATE_TEST_RESOURCES)
 public class ReportPortalInstallMojo extends AbstractMojo {
 
-	private static final String RP_PLUGIN_ID = "com.epam.reportportal:reportportal-maven-plugin";
+	private static final String RP_DEPENDENCY_GROUP = "com.epam.reportportal";
+
+	private static final String RP_PLUGIN_ID = RP_DEPENDENCY_GROUP + ":reportportal-maven-plugin";
 
 	private static final String JUNIT5_EXTENSION_FILE_NAME = "org.junit.jupiter.api.extension.Extension";
 	private static final String JUNIT5_EXTENSION_FILE_DESTINATION_PATH = "META-INF/services";
 	private static final String JUNIT5_PROPERTY_FILE_NAME = "junit-platform.properties";
 	private static final String JUNIT5_EXTENSION_FILE_SOURCE_PATH = "services/" + JUNIT5_EXTENSION_FILE_NAME;
 
+	@Parameter(defaultValue = "${project}", readonly = true, required = true)
+	private MavenProject project;
+
 	@Parameter(property = "session", defaultValue = "${session}", readonly = true)
 	private MavenSession session;
+
+	@Parameter(defaultValue = "${plugin}", readonly = true, required = true)
+	private PluginDescriptor pluginDescriptor;
 
 	@Parameter(property = "project.build.directory", defaultValue = "${project.build.directory}", readonly = true)
 	private String buildDirectoryPath;
@@ -44,10 +59,9 @@ public class ReportPortalInstallMojo extends AbstractMojo {
 
 	private void overrideProperties() throws MojoExecutionException {
 		Properties pluginProperties = new Properties();
-		pluginProperties.putAll(session.getCurrentProject()
-				.getBuildPlugins()
+		pluginProperties.putAll(project.getBuildPlugins()
 				.stream()
-				.filter(p -> p.getId().startsWith(RP_PLUGIN_ID))
+				.filter(p -> p.getKey().equals(RP_PLUGIN_ID))
 				.map(p -> ofNullable(p.getConfiguration()).map(c -> (Xpp3Dom) c)
 						.orElseGet(() -> new Xpp3Dom("configuration")))
 				.flatMap(c -> Arrays.stream(c.getChildren()))
@@ -130,6 +144,24 @@ public class ReportPortalInstallMojo extends AbstractMojo {
 		// TODO: implement
 	}
 
+	public void addDependencies() {
+		List<ComponentDependency> pluginDependencies = pluginDescriptor.getDependencies();
+		getLog().debug("Report Portal Plugin dependencies: " + pluginDependencies);
+		List<Dependency> projectDependencies = project.getDependencies();
+		pluginDependencies.stream()
+				.filter(d -> RP_DEPENDENCY_GROUP.equals(d.getGroupId()))
+				.forEach(d -> {
+					getLog().debug("Adding dependency: " + d.getArtifactId());
+					Dependency prjDep = new Dependency();
+					prjDep.setScope("test");
+					prjDep.setGroupId(d.getGroupId());
+					prjDep.setArtifactId(d.getArtifactId());
+					prjDep.setVersion(d.getVersion());
+					prjDep.setType(d.getType());
+					projectDependencies.add(prjDep);
+				});
+	}
+
 	@Override
 	public void execute() throws MojoExecutionException {
 		overrideProperties();
@@ -137,5 +169,6 @@ public class ReportPortalInstallMojo extends AbstractMojo {
 		setupTestNg();
 		setupLogbackLogger();
 		setupLog4jLogger();
+		addDependencies();
 	}
 }
