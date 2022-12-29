@@ -25,12 +25,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
-@Mojo(name = "configure", defaultPhase = LifecyclePhase.GENERATE_TEST_RESOURCES)
+@Mojo(name = "configure", defaultPhase = LifecyclePhase.TEST)
 public class ReportPortalInstallMojo extends AbstractMojo {
 
 	private static final String RP_DEPENDENCY_GROUP = "com.epam.reportportal";
